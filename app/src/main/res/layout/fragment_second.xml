@@ -23,6 +23,7 @@
         app:layout_constraintTop_toBottomOf="@id/fs_start_service"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        android:text="Log from service"
         android:layout_marginTop="16dp"/>
 
     <Button

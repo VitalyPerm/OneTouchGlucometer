@@ -13,7 +13,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 fun log(msg: String) {
     Log.d("check___", msg)
@@ -27,6 +31,7 @@ class FirstFragment : Fragment() {
     private lateinit var comm: Button
 
     private lateinit var mService: BindService
+    private var serviceMessangerJob: Job? = null
     private var mBound: Boolean = false
 
     private val connection = object : ServiceConnection {
@@ -37,10 +42,17 @@ class FirstFragment : Fragment() {
             mService = binder.service
             mBound = true
             log("onServiceConnected")
+            if (serviceMessangerJob?.isActive == true) return
+            serviceMessangerJob = mService.messanger
+                .onEach {
+                    log("collect service flow fragment first - $it")
+                }.launchIn(viewLifecycleOwner.lifecycleScope)
+
         }
 
         override fun onServiceDisconnected(arg0: ComponentName) {
             mBound = false
+            serviceMessangerJob?.cancel()
             log("onServiceDisconnected")
         }
     }
@@ -69,11 +81,14 @@ class FirstFragment : Fragment() {
         }
 
         unBindServiceBtn.setOnClickListener {
-            requireActivity().unbindService(connection)
+            kotlin.runCatching { requireActivity().unbindService(connection) }
+            serviceMessangerJob?.cancel()
             Toast.makeText(requireContext(), "unBind service", Toast.LENGTH_SHORT).show()
+            mBound = false
         }
         comm.setOnClickListener {
-            mService.serviceCommand()
+            if (mBound) mService.serviceCommand()
+            else Toast.makeText(requireContext(), "service not bound", Toast.LENGTH_SHORT).show()
         }
     }
 

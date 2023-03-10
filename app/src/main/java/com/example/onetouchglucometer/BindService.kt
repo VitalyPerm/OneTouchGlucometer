@@ -4,11 +4,17 @@ import android.app.Service
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class BindService : Service() {
-
     private val binder = LocalBinder()
+
+
+    val messanger = MutableSharedFlow<Int>()
 
     override fun onBind(p0: Intent?): IBinder = binder
 
@@ -19,6 +25,13 @@ class BindService : Service() {
     override fun onCreate() {
         super.onCreate()
         log("service onCreate")
+
+        GlobalScope.launch {
+            while (true) {
+                delay(1000)
+                messanger.emit(Random.nextInt())
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
